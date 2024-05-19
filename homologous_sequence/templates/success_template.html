@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block content %}
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link href="https://unpkg.com/tabulator-tables@4.9.3/dist/css/tabulator.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/tabulator-tables@4.9.3/dist/js/tabulator.min.js"></script>
+  
+	{% load static %}
+    <main class="rcontainer">
+        <div class="mx-auto h-100 mt-5 mb-5 p-5 w-75 shadow rounded">
+            <div>
+				<h1 class="mx-auto col-12 pb-4 text-center">Результаты поиска</h1>
+			</div>
+            <div class="container mb-4">
+            
+            </div> 
+            <div id="message-container">
+                <div id="message-container-1">
+                    <h5>1. Множественное выравнивание Muscle</h5>
+                    <div id="loading-spinner-1" class="text-center mt-3">
+                        <div class="spinner-border" role="status">
+                          <span class="sr-only"></span>
+                        </div>
+                        <p class="mt-2">Идет выполнение задачи...</p>
+                      </div>
+                </div> 
+                <div id="message-container-2">
+                    <h5>2. Поиск наиболее схожих последовательностей</h5>
+                    <div id="loading-spinner-2" class="text-center mt-3">
+                        <div class="spinner-border" role="status">
+                          <span class="sr-only"></span>
+                        </div>
+                        <p class="mt-2">Идет выполнение задачи...</p>
+                      </div>
+                </div> 
+                <div id="message-container-3">
+                    <h5>3. BLAST анализ</h5>
+                    <div id="loading-spinner-3" class="text-center mt-3">
+                        <div class="spinner-border" role="status">
+                          <span class="sr-only"></span>
+                        </div>
+                        <p class="mt-2">Идет выполнение задачи...</p>
+                      </div>
+                </div> 
+            </div> 
+        </div>
+    </main>
+	<script>
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/some_path/');
+        let messageCounter = 1;
+        let messageContainer = null;
+        let filePath_fasta_name = null;
+        const nextButton = document.createElement('button');
+        const csrfToken = '{{ csrf_token }}';
+
+        socket.onmessage = function (e) {
+            const loadingSpinner1 = document.getElementById('loading-spinner-1');
+            const loadingSpinner2 = document.getElementById('loading-spinner-2');
+            const loadingSpinner3 = document.getElementById('loading-spinner-3');
+            const data = JSON.parse(e.data);
+            const receivedMessage = data.message;
+
+            if (messageCounter == 1){
+                loadingSpinner1.style.display = 'none';
+                console.log('receivedMessage1', receivedMessage, typeof receivedMessage)
+                let messageContainer = document.getElementById('message-container-1');
+                const messageElement = document.createElement('p');
+                const filePath = receivedMessage[0].split('homologous_sequence/')[1];
+                console.log(filePath)
+                    
+                const downloadLink = document.createElement('a');
+                downloadLink.href = filePath;
+                downloadLink.download = filePath;
+                downloadLink.textContent = 'output.aln';
+
+                messageElement.appendChild(downloadLink);
+
+                messageContainer.appendChild(messageElement);
+                messageCounter++;
+
+            } 
+            else if (messageCounter == 2) {
+                loadingSpinner2.style.display = 'none';
+                console.log('receivedMessage2', receivedMessage, typeof receivedMessage)
+                let messageContainer = document.getElementById('message-container-2');
+                const messageElement = document.createElement('p');
+
+                if (receivedMessage[0] == null){
+                    messageElement.textContent = "Гомологичные последовательности не найдены.";
+                    messageContainer.appendChild(messageElement);
+                    messageCounter++;
+                } else{
+
+                const filePath = receivedMessage[0].split('homologous_sequence/')[1];
+                console.log("filePath", filePath)
+                const downloadLink = document.createElement('a');
+
+                downloadLink.href = filePath;
+                downloadLink.download = filePath;
+                downloadLink.textContent = "score.csv";
+
+                messageElement.appendChild(downloadLink);
+
+                let filePath_fasta = receivedMessage[1].split('homologous_sequence/')[1];
+                filePath_fasta_name = filePath_fasta.split('fasta_output_files/')[1];
+                console.log('filePath_fasta', filePath_fasta)
+
+                const downloadLink2 = document.createElement('a');
+                downloadLink2.href = filePath_fasta;
+                downloadLink2.download = filePath_fasta;
+                downloadLink2.textContent = 'predicted_proteins.fasta';
+
+                const lineBreak = document.createElement('br');
+                messageElement.appendChild(lineBreak);
+                messageElement.appendChild(downloadLink2);
+
+                messageContainer.appendChild(messageElement);
+                messageCounter++;}
+
+            } 
+            else if (messageCounter == 3) {
+                loadingSpinner3.style.display = 'none';
+                let messageContainer = document.getElementById('message-container-3');
+                const messageElement = document.createElement('p');
+
+                if (receivedMessage == "Error"){
+                    messageElement.textContent = "Гомологичные последовательности не найдены.";
+                    messageContainer.appendChild(messageElement);
+                    messageCounter++;
+                } 
+                
+                else {
+
+                const filePath_excel = receivedMessage[0].split('homologous_sequence/')[1];
+                const downloadLink = document.createElement('a');
+
+                downloadLink.href = filePath_excel
+                downloadLink.download = filePath_excel
+                downloadLink.textContent = 'BLAST_out.xlsx';
+
+                messageElement.appendChild(downloadLink);
+                messageContainer.appendChild(messageElement);
+                    
+                let jsonData = receivedMessage[1];
+                jsonData = JSON.parse(jsonData);
+
+                const tableHeader = document.createElement('h4');
+                tableHeader.textContent = 'Результаты поиска BLAST по базе данных Swiss-Prot';
+                messageContainer.appendChild(tableHeader);
+
+                const tableExplanation = document.createElement('p');
+                tableExplanation.textContent = 'Нажмите на ID тех последовательностей, которые хотите исключить из дальнейшего анализа:';
+                messageContainer.appendChild(tableExplanation);
+
+                const tableContainer = document.createElement('div');
+                tableContainer.id = 'my-table';
+                tableContainer.classList.add('mt-3');
+                messageContainer.appendChild(tableContainer);
+
+                let tableHTML = '<table id="blast-table" class="table" style="border-collapse: collapse; width: 100%; font-size: 14px;">'; // Используйте стили для управления границами и шириной таблицы
+                    tableHTML += '<tr>';
+                    for (var key in jsonData[0]) {
+                        tableHTML += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd;">' + key + '</th>'; // Используйте стили для добавления отступов и границ в заголовки
+                    }
+                    tableHTML += '</tr>';
+                    
+                    for (let i = 0; i < jsonData.length; i++) {
+                        tableHTML += '<tr>';
+                        for (let key in jsonData[i]) {
+                            tableHTML += '<td style="padding: 8px; text-align: left; border: 1px solid #ddd;">' + jsonData[i][key] + '</td>';
+                        }
+                        tableHTML += '</tr>';
+                    }
+                    tableHTML += '</table>';
+                
+                    // Вставляем HTML-строку в ваш div с идентификатором tableContainer
+                    tableContainer.innerHTML = tableHTML;
+                    
+                    // Add a click event listener to the table rows
+                    document.getElementById('blast-table').addEventListener('click', function (event) {
+                         const clickedElement = event.target;
+                         if (event.target.tagName === 'TD' && clickedElement.cellIndex === 0) {
+                             const clickedID = clickedElement.innerHTML;
+                             const rows = document.getElementById('blast-table').getElementsByTagName('tr');
+                             console.log('rows', rows)
+                             console.log('Click');
+                             console.log('ID:', clickedElement.innerHTML);
+                             
+                               for (let i = 0; i < rows.length; i++) {
+                                   let firstCell = rows[i].firstElementChild
+                                   if (firstCell.innerHTML === clickedID) {
+                                          if (rows[i].classList.contains('table-secondary')) {
+                                                rows[i].classList.remove('table-secondary');
+                                            } else {
+                                                rows[i].classList.add('table-secondary');
+                                            }
+                                   }
+                                }
+                        }
+                    });
+                // Append a "Next" button after the messageContainer
+                nextButton.textContent = 'Анализ полученных последовательностей';
+                nextButton.classList.add('btn', 'btn-primary', 'mt-3', 'mx-auto');
+                nextButton.style.display = 'block'; 
+                
+                $('#message-container').append(nextButton);
+                }
+            }
+        };
+
+        const sequences_type = '{{sequences_type}}';
+        const homologous_sequences_fasta_file = '{{homologous_sequences_fasta_file}}';
+        const annotated_sequences_fasta_file = '{{annotated_sequences_fasta_file}}';
+        const selected_sequences_count = '{{ selected_sequences_count }}';
+        const blastp_results_count = '{{ blastp_results_count }}';
+        const algorithm = '{{algorithm}}';
+        const algorithm_blast = '{{algorithm_blast}}';
+
+        socket.onopen = (event) => {
+            // Теперь соединение установлено, и вы можете отправлять сообщения
+            console.log('WebSocket connection opened!');
+            socket.send(JSON.stringify({
+            type: 'send_form_data',
+                data: { sequences_type, homologous_sequences_fasta_file, annotated_sequences_fasta_file, blastp_results_count, selected_sequences_count, algorithm, algorithm_blast},
+            }));
+        };
+            
+        nextButton.addEventListener('click', async function () {
+            const selectedIDs = [];
+            const rows = document.getElementById('blast-table').getElementsByTagName('tr');
+            for (let i = 1; i < rows.length; i++) {
+                if (!rows[i].classList.contains('table-secondary')) {
+                    let firstCell = rows[i].firstElementChild;
+                    const id = firstCell.innerHTML;
+                    if (!selectedIDs.includes(id)) {
+                        selectedIDs.push(id);
+                    }
+                }
+            }
+            
+            const confirmation = confirm(`Вы хотите отправить на проверку ${selectedIDs} ?`);
+            if (confirmation) {
+                const queryParams = [
+                    `homologous_seq={{ homologous_sequences_fasta_file }}`,
+                    `selectedIDs=${selectedIDs.join(',')}`,
+                    `predicted_seq=${filePath_fasta_name}`,
+                ];
+                const fullURL = '/sequence_analysis?' + queryParams.join('&');
+                // Открываем новую страницу с использованием массива ID
+                try {
+                    window.open(fullURL, '_blank');
+                } catch (error) {
+                    console.error('Произошла ошибка:', error);
+                    // Обработка ошибки, например, вывод сообщения пользователю
+                }
+            }
+        });
+
+
+</script>
+{% endblock %}

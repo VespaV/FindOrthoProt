@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block content %}
+    <main class="container-sm">
+        <div class="mx-auto mt-5 mb-5 p-5 w-75 shadow rounded">
+			<div>
+				<h1 class="mx-auto col-12 pb-4 text-center">Анализ предсказанный последовательностей</h1>
+			</div>
+            <form action="{% url 'analysis_success' %}" method="post" enctype="multipart/form-data" class="" id="Form_sequence_analysis" >
+                {% csrf_token %}
+
+                <div id="homologous-sequences" class="col-12 p-2 mx-auto">
+                    <label class="form-label" for="homologous_seq">1. Файл с гомологичными последовательностями:</label>
+                     </div>
+                <div id="predicted-sequences" class="col-12 p-2 mx-auto">
+                    <label class="form-label" for="select_predicted_seq">2. Файл с предсказанными последовательностями:</label>
+                </div>
+
+                <div class="form-check col-12 p-2 mx-auto mt-3 ms-4">
+                    <input class="form-check-input" type="checkbox" name = "chemPhysProperties" value="True" id="chemPhysProperties" checked>
+                    <label class="form-check-label" for="chemPhysProperties">Выполнить оценку физико-химических свойств</label>
+                </div>
+
+                <div class="form-check col-12 p-2 mx-auto mt-3 ms-4">
+                    <input class="form-check-input" type="checkbox" name="searchMotifs" value="True" id="searchMotifs" data-bs-toggle="collapse" data-bs-target="#searchMotifsColapse" aria-expanded="false" aria-controls="searchMotifsColapse" checked>
+                    <label class="form-check-label" for="searchMotifs">Выполнить поиск мотивов MEME</label>
+                </div>
+
+                <div class="collapse show" id="searchMotifsColapse">
+                    <div class="col-12 p-2 mx-auto mb-3">
+                        <label class="form-label" for="numMotifs">Количество мотивов:</label>
+                        <input type="number" name="numMotifs" id="numMotifs" class="form-control" max="20" min="1" value="5">
+                    </div>
+                </div>
+
+                 <div class="form-check col-12 p-2 mx-auto mt-3 ms-4">
+                    <input class="form-check-input" type="checkbox" name="buildPhyloTree" value="True" id="buildPhyloTree" data-bs-toggle="collapse" data-bs-target="#buildPhyloTreeCollapse" checked>
+                    <label class="form-check-label" for="buildPhyloTree">Провести филогенетический анализ</label>
+                </div>
+
+                <div class="collapse show" id="buildPhyloTreeCollapse">
+                    <div class="col-12 p-2 mx-auto mb-2">
+                        <label class="form-label" for="alignmentAlgorithm">Алгоритм множественного выравнивания:</label>
+                        <select name="alignmentAlgorithm" id="alignmentAlgorithm" class="form-select" >
+                            <option value="muscle">MUSCLE</option>
+                            <option value="mafft">MAFT</option>
+                            <option value="clustal_o">ClustalOmega</option>
+                        </select>
+                    </div>
+                    <div class="col-12 p-2 mx-auto mb-2">
+                        <label class="form-label" for="phyloAlgoritm">Алгоритм построения филогенетического дерева:</label>
+                        <select name="phyloAlgoritm" id="phyloAlgoritm" class="form-select">
+                            <option value="FastTree">FastTree</option>
+                            <option value="RAxML">RAxML</option>
+                            <option value="MaximumParsimony">MaximumParsimony</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-center w-100">
+                    <button type="submit" class="btn btn-primary btn-lg col-10 col-sm-10 col-md-6 col-xl-4 col-xxl-4 mt-4">Начать анализ</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script>
+        let homologous_seq = '{{ homologous_seq }}';
+        let select_predicted_seq = '{{select_predicted_seq}}';
+
+        let homologous_sequences = document.getElementById('homologous-sequences');
+        let predicted_sequences = document.getElementById('predicted-sequences');
+
+        let input_type = null;
+
+        if (homologous_seq !== 'None') {
+            let part_name = homologous_seq.split('homologous_sequences/')[1];
+            let homologous_seq_name = part_name.split('_')[0];
+
+            homologous_sequences.innerHTML += `<b> ${homologous_seq_name} </b><input type="hidden" name="homologous_seq" id="homologous_seq" class="form-control" value="${homologous_seq}" readonly>`;
+            input_type = 'hidden';
+
+        } else {
+            homologous_sequences.innerHTML += `<input type="file" name="homologous_seq" id="homologous_seq" class="form-control" required>`;
+            input_type = 'file'
+        }
+
+        if (select_predicted_seq !== 'None') {
+            let part_name = select_predicted_seq.split('selected_predicted.fasta/')[1];
+            let select_predicted_seq_name = part_name.split('_')[0];
+            predicted_sequences.innerHTML += `<b> ${select_predicted_seq_name} </b><input type="hidden" name="select_predicted_seq" id="select_predicted_seq" class="form-control" value="${select_predicted_seq}" readonly>`;
+        } else {
+            predicted_sequences.innerHTML += `<input type="file" name="select_predicted_seq" id="select_predicted_seq" class="form-control" required>`;
+        }
+
+        let errorMessageDiv = document.createElement('div');
+		errorMessageDiv.id = 'error-message';
+		errorMessageDiv.className = 'invalid-feedback';
+		predicted_sequences.appendChild(errorMessageDiv);
+
+        let sequences_type = 'new_type';
+
+
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let homologousInput = document.querySelector('#homologous_seq');
+            let predictedInput = document.querySelector('#select_predicted_seq');
+
+            homologousInput.addEventListener('change', handleInputChange);
+            predictedInput.addEventListener('change', handleInputChange);
+
+            function handleInputChange() {
+                if (homologousInput.value && predictedInput.value) {
+                    console.log('Check format')
+                    performFileFormatCheck()
+                }
+            }
+
+            function getCSRFToken() {
+                const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                .split('=')[1];
+
+                return cookieValue;
+            }
+
+            function performFileFormatCheck() {
+                if(homologousInput.files[0].name==predictedInput.files[0].name){
+                        errorMessageDiv.innerText = 'Ошибка в формате предоставленных файлов';
+                        errorMessageDiv.style.display = 'block';
+                        sequences_type = 'type_error';
+                        return false
+                    } else {
+                        let formData = new FormData();
+                        formData.append('homologous_seq', homologousInput.files[0]);
+                        formData.append('select_predicted_seq', predictedInput.files[0]);
+                        fetch('/check_format/', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRFToken': getCSRFToken(),
+                            },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Server response:', data);
+
+                        if (data.format === 'Format error') {
+                            console.error('Ошибка в формате файла:', data.format);
+                            console.log(errorMessageDiv)
+                            errorMessageDiv.innerText = 'Ошибка в формате предоставленных файлов';
+                            errorMessageDiv.style.display = 'block';
+                            predictedInput.classList.add('is-invalid');
+                            homologousInput.classList.add('is-invalid');
+                            sequences_type = 'type_error';
+                            return false
+                        } else {
+                            console.log('Формат файлов верен');
+                            errorMessageDiv.style.display = 'none';
+                            errorMessageDiv.innerText = '';
+                            predictedInput.classList.remove('is-invalid');
+                            homologousInput.classList.remove('is-invalid');
+
+                            if (data.type === 'type_error') {
+                                console.error('Ошибка в типе последовательности:', data.type);
+                                errorMessageDiv.innerText = 'Проверьте алфавит предоставленных файлов';
+                                errorMessageDiv.style.display = 'block';
+                                predictedInput.classList.add('is-invalid');
+                                homologousInput.classList.add('is-invalid');
+                                sequences_type = 'type_error';
+
+                                return false
+                            } else {
+                                console.log('Тип последовательностей:', data.type);
+                                errorMessageDiv.style.display = 'none';
+                                errorMessageDiv.innerText = '';
+                                predictedInput.classList.remove('is-invalid');
+                                homologousInput.classList.remove('is-invalid');
+                                sequences_type = 'correct';
+                                return true
+                            }
+                        }
+
+                        })
+                        .catch(error => {
+                        console.error('Error:', error);
+                    });
+                    }
+            }
+
+            function handleSubmit(event) {
+                const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+
+                if (checkedCheckboxes.length === 0) {
+                    alert('Пожалуйста, выберите тип анализа');
+                    event.preventDefault();
+                }
+
+                if (sequences_type == 'type_error') {
+                    console.log('Форма не отправлена из-за значения sequences_type');
+                    event.preventDefault();}
+
+                     else {console.log(performFileFormatCheck())}
+            }
+
+            document.querySelector('form').addEventListener('submit', handleSubmit);
+
+
+            window.onload = function() {
+                document.getElementById('Form_sequence_analysis').reset();
+                console.log('Form has been reset');
+            };
+        });
+
+    </script>
+{% endblock %}

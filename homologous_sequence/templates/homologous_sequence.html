@@ -1,0 +1,180 @@
+
+	{% extends 'base.html' %}
+	{% block content %}
+	<main class="container-sm">
+		<div class="mx-auto mt-5 mb-5 p-5 w-75 shadow rounded">
+			<div>
+				<h1 class="mx-auto col-12 pb-4 text-center">Поиск гомологичных последовательностей</h1>
+			</div>
+			<form action="{% url 'index' %}" method="post" enctype="multipart/form-data" class="" id="myForm">
+				{% csrf_token %}
+				{% for input in form %}
+				{% if input.name == 'selected_sequences_count' %}
+				<button type="button" class="btn btn-light mt-3" style="width: 335px; text-align: left;" data-bs-toggle="collapse" data-bs-target="#additionalContent" aria-expanded="false" aria-controls="additionalContent">
+					+ Показать дополнительные параметры
+				</button>
+		
+					<div class="collapse mt-3" id="additionalContent">
+				{% endif %}
+
+				<div class="col-12 p-2 mx-auto ">
+
+						{% if input.name != 'sequences_type' %}
+						<label for="{{ input.id_for_label }}" class="form-label">{{ input.label }}</label>
+						{% endif %}
+
+						
+						{% if input.field.widget.input_type == 'select' %}
+								<select name="{{ input.name }}" id="{{ input.auto_id }}" class="form-control" {{ input.widget }} {% if input.field.required %}required{% endif %}>
+										{% for value, label in input.field.choices %}
+												<option value="{{ value }}" {% if input.value == value %}selected{% endif %}>{{ label }}</option>
+										{% endfor %}
+								</select>
+						{% elif input.field.widget.input_type == 'number' %}
+								<input type="{{ input.field.widget.input_type }}" name="{{ input.name }}" id="{{ input.auto_id }}" class="form-control" {% if input.field.required %}required{% endif %} value= "{% if input.initial %}{{ input.initial }}{% endif %}" {% if input.field.min_value %}min="{{ input.field.min_value }}"{% endif %} {% if input.field.max_value %}max="{{ input.field.max_value }}"{% endif %} {{ input.widget }}>
+								<small class="form-text text-muted">{{ input.help_text }}</small>
+						{% else %}
+								<input type="{{ input.field.widget.input_type }}" name="{{ input.name }}" id="{{ input.auto_id }}" value= "{% if input.initial %}{{ input.initial }}{% endif %}" class="form-control" {{ input.widget }} {% if input.field.required %}required{% endif %}>
+								<small class="form-text text-muted">{{ input.help_text }}</small>
+						{% endif %}
+				</div>
+
+				{% if input.name == 'algorithm_blast' %}
+					</div>
+				{% endif %}
+
+		{% endfor %}
+				<div class="text-center w-100">
+					<button type="submit" class="btn btn-primary btn-lg col-10 col-sm-10 col-md-6 col-xl-4 col-xxl-4 mt-4">Искать</button>
+				</div>
+
+			</form>
+		</div>
+	</main>
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		let myForm = document.getElementById('myForm');
+		let input_homolog = document.getElementsByName('homologous_sequences_fasta_file')[0];
+		let input_annotation = document.getElementsByName('annotated_sequences_fasta_file')[0];
+		let sequences_type = document.getElementsByName('sequences_type')[0];
+		
+
+		function getCSRFToken() {
+			const cookieValue = document.cookie
+			.split('; ')
+			.find(row => row.startsWith('csrftoken='))
+			.split('=')[1];
+
+			return cookieValue;
+		}
+
+		let errorMessageDiv = document.createElement('div');
+		errorMessageDiv.id = 'error-message';
+		errorMessageDiv.className = 'invalid-feedback';
+		input_annotation.parentNode.appendChild(errorMessageDiv);
+
+		function performFileFormatCheck() {
+			if(input_homolog.files[0].name==input_annotation.files[0].name){
+					errorMessageDiv.innerText = 'Ошибка в формате предоставленных файлов';
+					errorMessageDiv.style.display = 'block';
+					sequences_type.value = 'none_type'
+					return false
+				} else {				
+					let formData = new FormData();
+					formData.append('homologous_sequences_fasta_file', input_homolog.files[0]);
+					formData.append('annotated_sequences_fasta_file', input_annotation.files[0]);
+
+					fetch('/check_format/', {
+						method: 'POST',
+						body: formData,
+						headers: {
+							'X-CSRFToken': getCSRFToken(),  
+						},
+					})
+					.then(response => response.json())
+					.then(data => {
+						console.log('Server response:', data);
+
+					if (data.format === 'Format error') {
+						console.error('Ошибка в формате файла:', data.format);
+						console.log(errorMessageDiv)
+						errorMessageDiv.innerText = 'Ошибка в формате предоставленных файлов';
+						errorMessageDiv.style.display = 'block';
+						input_annotation.classList.add('is-invalid'); 
+						input_homolog.classList.add('is-invalid');
+						sequences_type.value = 'none_type'
+						return false
+					} else {
+						console.log('Формат файлов верен');
+						errorMessageDiv.style.display = 'none';
+						errorMessageDiv.innerText = ''; 
+						input_annotation.classList.remove('is-invalid'); 
+						input_homolog.classList.remove('is-invalid'); 
+						sequences_type.value = 'none_type'
+
+						if (data.type === 'type_error' && data.type === 'DNA') {
+							console.error('Ошибка в типе последовательности:', data.type);
+							errorMessageDiv.innerText = 'Проверьте алфавит предоставленных файлов';
+							errorMessageDiv.style.display = 'block';
+							input_annotation.classList.add('is-invalid'); 
+							input_homolog.classList.add('is-invalid');
+							sequences_type.value = 'none_type'
+							return false
+						} else {
+							console.log('Тип последовательностей:', data.type);
+							sequences_type.value = data.type
+							errorMessageDiv.style.display = 'none';
+							errorMessageDiv.innerText = '';
+							input_annotation.classList.remove('is-invalid'); 
+							input_homolog.classList.remove('is-invalid');  	
+							return true
+						}
+					}
+					
+					})
+					.catch(error => {
+					console.error('Error:', error);
+				});
+				} 
+		}
+
+		function handleInputChange() {
+			if (input_homolog.value && input_annotation.value) {
+				performFileFormatCheck()
+			}
+		}
+	
+	
+		function handleSubmit(event) {
+			console.log(sequences_type.value)
+			if (sequences_type.value == 'Format error' || sequences_type.value == 'none_type' || sequences_type.value == 'new_type') {
+				event.preventDefault();
+				console.log('Форма не отправлена из-за значения sequences_type');
+
+				if (sequences_type.value == 'new_type' && performFileFormatCheck()) {
+					myForm.submit();
+				} else {console.log(performFileFormatCheck())}		
+			}
+		}
+
+		input_homolog.addEventListener('change', handleInputChange);
+		input_annotation.addEventListener('change', handleInputChange);
+
+		let additionalContent = document.getElementById('additionalContent');
+		let toggleButton = document.querySelector('[data-bs-target="#additionalContent"]');
+        
+		additionalContent.addEventListener('show.bs.collapse', function () {
+			toggleButton.textContent = '- Скрыть дополнительные параметры';
+		});
+	
+		additionalContent.addEventListener('hide.bs.collapse', function () {
+			toggleButton.textContent = '+ Показать дополнительные параметры';
+		});
+
+
+	document.querySelector('form').addEventListener('submit', handleSubmit);
+
+	});
+
+	</script>
+	{% endblock %}

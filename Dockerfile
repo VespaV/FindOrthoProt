@@ -39,7 +39,7 @@ RUN apt-get install -y libxml-parser-perl
 EXPOSE 8000
 ENV DEBUG=1
 ENV SECRET_KEY="0930d30j9jd09j09j109fj01j9f"
-ENV ALLOWED_HOSTS="localhost, 127.0.0.1:80, 95.163.223.58, findorthoprot.ru"
+ENV ALLOWED_HOSTS="localhost,127.0.0.1:80,95.163.223.58,findorthoprot.ru"
 
 ENV PATH="/root/meme/bin:/root/meme/libexec/meme-5.5.5:$PATH"
 

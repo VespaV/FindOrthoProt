@@ -8,6 +8,7 @@
 			</div>
 			<form action="{% url 'index' %}" method="post" enctype="multipart/form-data" class="" id="myForm">
 				{% csrf_token %}
+				<!-- <input type="hidden" name="sequences_type" id="id_sequences_type" value="none_type" class="form-control"> -->
 				{% for input in form %}
 				{% if input.name == 'selected_sequences_count' %}
 				<button type="button" class="btn btn-light mt-3" style="width: 335px; text-align: left;" data-bs-toggle="collapse" data-bs-target="#additionalContent" aria-expanded="false" aria-controls="additionalContent">
@@ -162,7 +163,8 @@
 
 		let additionalContent = document.getElementById('additionalContent');
 		let toggleButton = document.querySelector('[data-bs-target="#additionalContent"]');
-        
+		
+		// Слушаем событие Bootstrap Collapse, чтобы изменять текст кнопки
 		additionalContent.addEventListener('show.bs.collapse', function () {
 			toggleButton.textContent = '- Скрыть дополнительные параметры';
 		});

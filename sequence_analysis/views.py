@@ -2,7 +2,11 @@ from django.shortcuts import render
 from Bio import SeqIO
 from sequence_analysis.constants import SELECTED_PREDICTED_PROTEINS
 from homologous_sequence.constants import FASTA_OUTPUT_FOLDER, HOMOLOGOUS_FOLDER
+import os
+import uuid
 from FindOrthoProt.generate_file_name import generate_id_file
+import json
+from django.http import HttpResponse
 
 def analysis_seq_view(request):
     homologous_seq = None
@@ -36,7 +40,7 @@ def analysis_success_view(request):
         print(data)
         print("-------- data ------------")
         
-        homologous_sequences_fasta_file = request.FILES.get('homologous_sequences_fasta_file', False)
+        homologous_sequences_fasta_file = request.FILES.get('homologous_seq', False)
         if not homologous_sequences_fasta_file: 
             homologous_sequences_filename = request.POST.get('homologous_seq')
         else:
@@ -46,6 +50,7 @@ def analysis_success_view(request):
                     destination.write(chunk)
         
         select_predicted_seq = request.FILES.get('select_predicted_seq', False)
+
         if not select_predicted_seq: 
             select_predicted_seq_filename = request.POST.get('select_predicted_seq')
         else:
@@ -60,7 +65,9 @@ def analysis_success_view(request):
         build_phylo_tree = request.POST.get('buildPhyloTree', 'off')
         alignment_algorithm = request.POST.get('alignmentAlgorithm', None)
         phylo_algorithm = request.POST.get('phyloAlgoritm', None)
-
+        
+        # Convert string representations to actual boolean values
+   
         form_data = {
             'homologous_sequences_fasta_file': homologous_sequences_filename,
             'select_predicted_seq': select_predicted_seq_filename,
@@ -78,8 +85,6 @@ def analysis_success_view(request):
     return render(request,
                   'form_analysis.html', {'homologous_seq': homologous_seq, 'select_predicted_seq': select_predicted_seq})
 
-
-
 def filter_fasta_by_ids(input_fasta, target_ids):
     records_to_write = []
     output_fasta = generate_id_file('autopredict', 'txt', SELECTED_PREDICTED_PROTEINS)
@@ -94,6 +99,21 @@ def filter_fasta_by_ids(input_fasta, target_ids):
 
     return output_fasta
 
+def meme_view(request):
+    # Получаем значение параметра html_link из запроса
+    html_link = request.GET.get('html_link')
+
+    # Проверяем, существует ли файл по указанному пути
+    if html_link and os.path.exists(html_link):
+        # Открываем файл и передаем его содержимое в контекст представления
+        with open(html_link, 'r') as file:
+            html_content = file.read()
+
+        # Возвращаем содержимое файла в виде HTTP-ответа
+        return HttpResponse(html_content, content_type='text/html')
+    else:
+        # Если файл не найден, возвращаем ошибку или редирект
+        return HttpResponse('File not found', status=404)
 
 
 

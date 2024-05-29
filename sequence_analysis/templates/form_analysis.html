@@ -63,6 +63,7 @@
         </div>
     </main>
     <script>
+        // Retrieve values from Local Storage
         let homologous_seq = '{{ homologous_seq }}';
         let select_predicted_seq = '{{select_predicted_seq}}';
 
@@ -72,6 +73,7 @@
         let input_type = null;
 
         if (homologous_seq !== 'None') {
+            // Update the content of homologous-sequences-container with values from Local Storage
             let part_name = homologous_seq.split('homologous_sequences/')[1];
             let homologous_seq_name = part_name.split('_')[0];
 
@@ -188,8 +190,10 @@
             }
 
             function handleSubmit(event) {
+                    // Поиск всех отмеченных чекбоксов
                 const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
 
+                // Если отмеченных чекбоксов нет, предотвращаем отправку формы
                 if (checkedCheckboxes.length === 0) {
                     alert('Пожалуйста, выберите тип анализа');
                     event.preventDefault();
@@ -199,13 +203,18 @@
                     console.log('Форма не отправлена из-за значения sequences_type');
                     event.preventDefault();}
 
+
                      else {console.log(performFileFormatCheck())}
+
             }
 
             document.querySelector('form').addEventListener('submit', handleSubmit);
 
 
+
+            // Добавим обработчик события для кнопки reset
             window.onload = function() {
+                // Сброс формы при загрузке страницы
                 document.getElementById('Form_sequence_analysis').reset();
                 console.log('Form has been reset');
             };

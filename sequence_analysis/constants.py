@@ -13,3 +13,6 @@ PHYLO_ALIGNMENTS = 'sequence_analysis/static/output_files/phylo_tree/alignments/
 PHYLO_JOINED_FASTA = 'sequence_analysis/static/output_files/phylo_tree/joined_fasta/'
 PHYLO_TREE_NEWIK = 'sequence_analysis/static/output_files/phylo_tree/tree_newik/'
 PHYLO_TREE_PICTURE = 'sequence_analysis/static/output_files/phylo_tree/tree_picture/'
+
+MEME_OUTPUT = 'sequence_analysis/static/output_files/motif_search/meme/'
+FIMO_OUTPUT = 'sequence_analysis/static/output_files/motif_search/fimo/'

@@ -6,6 +6,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from homologous_sequence.program_classes.check_homology import Homology
 from sequence_analysis.program_classes.prot_param import ProteinPropertiesAnalyzer
 from sequence_analysis.program_classes.phylo_tree import PhyloTree
+from sequence_analysis.program_classes.search_motifs import SearchMotifs
 
 class MyConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -92,6 +93,18 @@ class MyConsumer(AsyncWebsocketConsumer):
             massage3 = await self.visual_tree(phylo_object)
             await self.send_message_to_browser(massage3)
 
+        if form_data['search_motifs'] == 'True':
+            print('search_motifs = True')
+            motif_object = SearchMotifs(homologous_file=form_data['homologous_sequences_fasta_file'],
+                                        predicted_file=form_data['select_predicted_seq'],
+                                        num_motif=form_data['num_motifs'])
+            massage1 = await self.meme(motif_object)
+            await self.send_message_to_browser(massage1)
+
+            message2 = await self.fimo(motif_object)
+            await self.send_message_to_browser(message2)
+
+
     async def prot_param_amino_count(self, prot_object):
         answer = prot_object.amino_gistogram()
         await asyncio.sleep(2)
@@ -120,6 +133,16 @@ class MyConsumer(AsyncWebsocketConsumer):
     async def visual_tree(self, phylo_object):
         answer = phylo_object.visual_tree()
         await asyncio.sleep(3)
+        return answer
+
+    async def meme(self, motif_object):
+        answer = motif_object.find_motifs_with_meme()
+        await asyncio.sleep(1)
+        return answer
+
+    async def fimo(self, motif_object):
+        answer = motif_object.fimo_run()
+        await asyncio.sleep(2)
         return answer
 
 

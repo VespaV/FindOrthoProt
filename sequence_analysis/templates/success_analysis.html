@@ -22,6 +22,8 @@
     const phylo_algorithm = '{{phylo_algorithm}}';
     const socket = new WebSocket('ws://' + window.location.host + '/ws/some_path/');
 
+
+
     let divPhysChem = false;
     let divSearchMotif = false;
     let divBuildTree = false;
@@ -29,7 +31,9 @@
     let formData = null; 
 
     window.onload = function() {
+        // Проверяем условие chem_phys_properties
         if (chem_phys_properties === 'True') {
+            // Создаем новый элемент div
             divPhysChem = document.createElement('div');
             divPhysChem.id = 'chem-phys-properties';
             const titlePhysChem = document.createElement('h4');
@@ -40,16 +44,18 @@
              addLoadingSpinner(divPhysChem);
             }
         if (search_motifs === 'True') {
+            // Создаем новый элемент div
             divSearchMotif = document.createElement('div');
             divSearchMotif.id = 'search-motifs';
             const titleSearchMotif = document.createElement('h4');
-            titleSearchMotif.textContent = 'Поиск мотивов MEME';
+            titleSearchMotif.textContent = 'Поиск мотивов de novo';
             titleSearchMotif.classList.add("mt-4", "mb-4");
             divSearchMotif.append(titleSearchMotif);
              document.getElementById('message-container').appendChild(divSearchMotif);
             addLoadingSpinner(divSearchMotif);
             }
         if (build_phylo_tree === 'True') {
+            // Создаем новый элемент div
             divBuildTree = document.createElement('div');
             divBuildTree.id = 'phylo-tree';
             const titleBuildTree = document.createElement('h4');
@@ -62,6 +68,7 @@
     };
 
     socket.onopen = (event) => {
+            // Теперь соединение установлено, и вы можете отправлять сообщения
             console.log('WebSocket connection opened!');
             socket.send(JSON.stringify({
             type: 'form_seq_analysis',
@@ -75,15 +82,18 @@
          console.log(receivedMessage);
          let spinerPhysChem = null;
          let spinerBuildTree = null
-         if (divPhysChem){
+         let spinerSearchMotif = null
+         if (divPhysChem) {
              spinerPhysChem = divPhysChem.querySelector('.spinnerContainer')
          }
-         if (divBuildTree){
+         if (divBuildTree) {
              spinerBuildTree = divBuildTree.querySelector('.spinnerContainer')
          }
+         if (divSearchMotif) {
+             spinerSearchMotif = divSearchMotif.querySelector('.spinnerContainer')
+         }
 
-
-         if (receivedMessage[0] == 'AminoGist'){
+         if (receivedMessage[0] == 'AminoGist') {
              console.log("AminoGist works")
 
              let messageContainer1 = document.createElement('div');
@@ -94,27 +104,30 @@
              AminoGistTitle.classList.add("mt-4", "mb-0");
              messageContainer1.append(AminoGistTitle)
 
-            divPhysChem.insertBefore(messageContainer1, spinerPhysChem);
+             // Вставляем изображение в элемент с id 'message-container'
+             divPhysChem.insertBefore(messageContainer1, spinerPhysChem);
 
-             const { button, collapsibleDiv } = createButtonAndCollapseDiv('aminoGist', '#aminoGistTable', 'aminoGistTable');
+             const {
+                 button,
+                 collapsibleDiv
+             } = createButtonAndCollapseDiv('aminoGist', '#aminoGistTable', 'aminoGistTable');
 
-            document.getElementById('AminoGist').appendChild(button);
-            document.getElementById('AminoGist').appendChild(collapsibleDiv);
+             document.getElementById('AminoGist').appendChild(button);
+             document.getElementById('AminoGist').appendChild(collapsibleDiv);
 
-            createTableFromJson(receivedMessage[2], 'aminoGistTable');
+             createTableFromJson(receivedMessage[2], 'aminoGistTable');
 
              const imgElement = document.createElement('img');
 
-            const path = receivedMessage[1].split('sequence_analysis')[1];
-            console.log('path', path);
-            imgElement.src = path;
-            imgElement.style.width = '90%';
+             {#const filePath = receivedMessage[1].split('sequence_analysis/')[1];#}
+             const path = receivedMessage[1].split('sequence_analysis')[1];
+             console.log('path', path);
+             imgElement.src = path; // Путь к изображению, который пришел в сообщении
+             imgElement.style.width = '90%';    // Укажите желаемую ширину изображения
 
 
              messageContainer1.appendChild(imgElement);
-        }
-
-         else if (receivedMessage[0] == 'AllParams'){
+         } else if (receivedMessage[0] == 'AllParams') {
              const imageContainer = document.createElement('div');
              imageContainer.id = 'AllParams';
              divPhysChem.insertBefore(imageContainer, spinerPhysChem);
@@ -124,29 +137,34 @@
              AllParamsTitle.classList.add("mt-4", "mb-0");
              imageContainer.append(AllParamsTitle)
 
-             const { button, collapsibleDiv } = createButtonAndCollapseDiv('AllParamsButt', '#AllParamsTable', 'AllParamsTable');
-            imageContainer.appendChild(button);
-            imageContainer.appendChild(collapsibleDiv);
-            console.log('receivedMessage[2]', receivedMessage[2]);
-            console.log(typeof (receivedMessage[2]));
+             const {
+                 button,
+                 collapsibleDiv
+             } = createButtonAndCollapseDiv('AllParamsButt', '#AllParamsTable', 'AllParamsTable');
+             imageContainer.appendChild(button);
+             imageContainer.appendChild(collapsibleDiv);
+             console.log('receivedMessage[2]', receivedMessage[2]);
+             console.log(typeof (receivedMessage[2]));
 
-            createTableFromJson(receivedMessage[2], 'AllParamsTable');
+             createTableFromJson(receivedMessage[2], 'AllParamsTable');
              console.log('created');
 
              const data = JSON.parse(receivedMessage[1]);
 
              for (const key in data) {
-                if (data.hasOwnProperty(key)) {
-                    let imgElement = document.createElement('img');
-                    imgElement.style.width = '90%';
+                 if (data.hasOwnProperty(key)) {
+                     // Создание элемента img
+                     let imgElement = document.createElement('img');
+                     imgElement.style.width = '90%';
 
-                    imgElement.src = data[key].split('sequence_analysis')[1];
+                     // Установка атрибута src для изображения
+                     imgElement.src = data[key].split('sequence_analysis')[1];
 
-                    imageContainer.appendChild(imgElement);
-                }
-            }
-         }
-         else if (receivedMessage[0] == 'SecStruct'){
+                     // Добавление изображения в контейнер
+                     imageContainer.appendChild(imgElement);
+                 }
+             }
+         } else if (receivedMessage[0] == 'SecStruct') {
              console.log("SecStruct works")
              const imageContainer = document.createElement('div');
              imageContainer.id = 'SecStruct';
@@ -157,74 +175,136 @@
              SecStructTitle.classList.add("mt-4", "mb-0");
              imageContainer.append(SecStructTitle)
 
-             const { button, collapsibleDiv } = createButtonAndCollapseDiv('SecStructButt', '#SecStructTable', 'SecStructTable');
-            imageContainer.appendChild(button);
-            imageContainer.appendChild(collapsibleDiv);
-            console.log('receivedMessage[2]', receivedMessage[2]);
-            console.log(typeof (receivedMessage[2]));
+             const {
+                 button,
+                 collapsibleDiv
+             } = createButtonAndCollapseDiv('SecStructButt', '#SecStructTable', 'SecStructTable');
+             imageContainer.appendChild(button);
+             imageContainer.appendChild(collapsibleDiv);
+             console.log('receivedMessage[2]', receivedMessage[2]);
+             console.log(typeof (receivedMessage[2]));
 
-            createTableFromJson(receivedMessage[2], 'SecStructTable');
+             createTableFromJson(receivedMessage[2], 'SecStructTable');
              console.log('created');
 
              const imgElement = document.createElement('img');
-            const path = receivedMessage[1].split('sequence_analysis')[1];
-            console.log('path', path);
-            imgElement.src = path;
-            imgElement.style.width = '90%';
-            imageContainer.appendChild(imgElement);
-            divPhysChem.removeChild(spinerPhysChem);
-         }
+             const path = receivedMessage[1].split('sequence_analysis')[1];
+             console.log('path', path);
+             imgElement.src = path; // Путь к изображению, который пришел в сообщении
+             imgElement.style.width = '90%';
+             imageContainer.appendChild(imgElement);
+             divPhysChem.removeChild(spinerPhysChem);
+         } else if (receivedMessage[0] == "Meme") {
+             console.log('Meme')
+             const masageContainer = document.createElement('div');
+             masageContainer.id = 'MotifSearch';
+             divSearchMotif.insertBefore(masageContainer, spinerSearchMotif);
 
-         if (receivedMessage[0] == 'multiAlign'){
-                const messageElement = document.createElement('p');
-                const filePath = receivedMessage[1].split('sequence_analysis')[1];
-                console.log(filePath)
-                const fileName = 'multiple_alignment.aln'
+             const MemeTitle = document.createElement('h6');
+             MemeTitle.textContent = 'Предсказание мотивов гомологичных последовательностей инструментом MEME';
+             MemeTitle.classList.add("mt-4", "mb-4");
+             masageContainer.append(MemeTitle)
 
-                const downloadLink = document.createElement('a');
-                downloadLink.href = filePath;
-                downloadLink.download = fileName;
-                downloadLink.textContent = fileName;
+             const htmlLink = document.createElement('a');
+             htmlLink.textContent = 'Ссылка на HTML-файл';
+             const htmlLinkUrl = '/sequence_analysis/meme/?html_link=' + encodeURIComponent(receivedMessage[2]);
+             htmlLink.href = htmlLinkUrl;
+             htmlLink.target = '_blank';
+             masageContainer.appendChild(htmlLink);
+             htmlLink.classList.add("mt-4", "mb-4");
+             htmlLink.style.marginLeft = '10px';
 
-                messageElement.appendChild(downloadLink);
+             masageContainer.appendChild(document.createElement('br'));
 
-                divBuildTree.insertBefore(messageElement, spinerBuildTree);
-         }
-         if (receivedMessage[0] == 'forTree'){
-            const messageElement = document.createElement('p');
-            const filePath = receivedMessage[1].split('sequence_analysis')[1];
-            console.log(filePath)
-            const fileName = 'tree.nwk'
+             const {
+                 button,
+                 collapsibleDiv
+             } = createButtonAndCollapseDiv('MotifSearchButt', '#MotifSearchTable', 'MotifSearchTable');
+             masageContainer.appendChild(button);
+             masageContainer.appendChild(collapsibleDiv);
 
-            const downloadLink = document.createElement('a');
-            downloadLink.href = filePath;
-            downloadLink.download = fileName;
-            downloadLink.textContent = fileName;
+             createTableFromJson(receivedMessage[1], 'MotifSearchTable');
+         } else if (receivedMessage[0] == "Fimo") {
+             console.log("Fimo")
+             const masageContainer = document.createElement('div');
+             masageContainer.id = 'MotifSearch';
+             divSearchMotif.insertBefore(masageContainer, spinerSearchMotif);
 
-            messageElement.appendChild(downloadLink);
+             const FimeTitle = document.createElement('h6');
+             FimeTitle.textContent = 'Поиск идентифицированных мотивов в предсказанных гомологичных последовательностях ';
+             FimeTitle.classList.add("mt-4", "mb-4");
+             masageContainer.append(FimeTitle)
 
-            divBuildTree.insertBefore(messageElement, spinerBuildTree);
+             const htmlLink = document.createElement('a');
+             htmlLink.textContent = 'Ссылка на HTML-файл';
+             const htmlLinkUrl = '/sequence_analysis/meme/?html_link=' + encodeURIComponent(receivedMessage[2]);
+             htmlLink.href = htmlLinkUrl;
+             htmlLink.target = '_blank';
+             masageContainer.appendChild(htmlLink);
+             htmlLink.classList.add("mt-4", "mb-4");
+             htmlLink.style.marginLeft = '10px';
 
-            formData = new FormData();
-            formData.append('newick', receivedMessage[1]);
-            formData.append('ids', receivedMessage[2]);
+             masageContainer.appendChild(document.createElement('br'));
 
-         }
-         if (receivedMessage[0] == "Tree visualisation"){
-              console.log("Tree visualisation works")
+             const {
+                 button,
+                 collapsibleDiv
+             } = createButtonAndCollapseDiv('FimoSearchButt', '#FimoSearchTable', 'FimoSearchTable');
+             masageContainer.appendChild(button);
+             masageContainer.appendChild(collapsibleDiv);
+
+             createTableFromJson(receivedMessage[1], 'FimoSearchTable');
+
+             divSearchMotif.removeChild(spinerSearchMotif);
+
+         } else if (receivedMessage[0] == 'multiAlign') {
+             const messageElement = document.createElement('p');
+             const filePath = receivedMessage[1].split('sequence_analysis')[1];
+             console.log(filePath)
+             const fileName = 'multiple_alignment.aln'
+
+             const downloadLink = document.createElement('a');
+             downloadLink.href = filePath;
+             downloadLink.download = fileName;
+             downloadLink.textContent = fileName;
+
+             messageElement.appendChild(downloadLink);
+
+             divBuildTree.insertBefore(messageElement, spinerBuildTree);
+         } else if (receivedMessage[0] == 'forTree') {
+             const messageElement = document.createElement('p');
+             const filePath = receivedMessage[1].split('sequence_analysis')[1];
+             console.log(filePath)
+             const fileName = 'tree.nwk'
+
+             const downloadLink = document.createElement('a');
+             downloadLink.href = filePath;
+             downloadLink.download = fileName;
+             downloadLink.textContent = fileName;
+
+             messageElement.appendChild(downloadLink);
+
+             divBuildTree.insertBefore(messageElement, spinerBuildTree);
+
+             formData = new FormData();
+             formData.append('newick', receivedMessage[1]);
+             formData.append('ids', receivedMessage[2]);
+
+         } else if (receivedMessage[0] == "Tree visualisation") {
+             console.log("Tree visualisation works")
              const imageContainer = document.createElement('div');
              imageContainer.id = 'TreeVisual';
              divBuildTree.insertBefore(imageContainer, spinerBuildTree);
 
-            console.log('receivedMessage[1]', receivedMessage[1]);
+             console.log('receivedMessage[1]', receivedMessage[1]);
 
              const imgElement = document.createElement('img');
-            const path = receivedMessage[1].split('sequence_analysis')[1];
-            console.log('path', path);
-            imgElement.src = path;
-            imgElement.style.width = '90%';
-            imageContainer.appendChild(imgElement);
-            divBuildTree.removeChild(spinerBuildTree);
+             const path = receivedMessage[1].split('sequence_analysis')[1];
+             console.log('path', path);
+             imgElement.src = path; // Путь к изображению, который пришел в сообщении
+             imgElement.style.width = '90%';
+             imageContainer.appendChild(imgElement);
+             divBuildTree.removeChild(spinerBuildTree);
          }
      }
 
@@ -263,7 +343,7 @@
             row.appendChild(idCell);
 
             const rowData = data[key];
-            headers.slice(1).forEach(header => { // Start from the second element in headers
+            headers.slice(1).forEach(header => {
                 const cell = document.createElement('td');
                 cell.textContent = rowData[header] !== null ? rowData[header] : 'null';
                 row.appendChild(cell);
@@ -293,24 +373,37 @@
         collapsibleDiv.style.overflowX = 'auto';
         collapsibleDiv.classList.add('collapse');
 
+        collapsibleDiv.addEventListener('show.bs.collapse', function() {
+            button.textContent = 'Скрыть таблицу';
+        });
+        collapsibleDiv.addEventListener('hide.bs.collapse', function() {
+            button.textContent = 'Посмотреть таблицу значений';
+        });
+
         return { button, collapsibleDiv };
      }
 
+
+
+collapsibleDiv.addEventListener('hide.bs.collapse', function() {
+    button.textContent = 'Посмотреть таблицу значений';
+});
+
     function addLoadingSpinner(container) {
-                const spinnerContainer = document.createElement('div');
-                spinnerContainer.classList.add('text-center', 'mt-3', 'spinnerContainer')
+        const spinnerContainer = document.createElement('div');
+        spinnerContainer.classList.add('text-center', 'mt-3', 'spinnerContainer')
 
-                const spinner = document.createElement('div');
-                spinner.classList.add('spinner-border');
-                spinner.role = 'status';
+        const spinner = document.createElement('div');
+        spinner.classList.add('spinner-border');
+        spinner.role = 'status';
 
-                const span = document.createElement('span');
-                span.classList.add('visually-hidden');
-                span.textContent = 'Loading...';
+        const span = document.createElement('span');
+        span.classList.add('visually-hidden');
+        span.textContent = 'Loading...';
 
-                spinner.appendChild(span);
-                spinnerContainer.appendChild(spinner);
-                container.appendChild(spinnerContainer);
+        spinner.appendChild(span);
+        spinnerContainer.appendChild(spinner);
+        container.appendChild(spinnerContainer);
     }
     function getCSRFToken() {
 			const cookieValue = document.cookie
@@ -320,7 +413,6 @@
 
 			return cookieValue;
     }
-
 
 </script>
 {% endblock %}

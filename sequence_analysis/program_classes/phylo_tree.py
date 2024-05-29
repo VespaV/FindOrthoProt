@@ -5,8 +5,6 @@ from Bio import SeqIO
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
 from Bio.Phylo.TreeConstruction import DistanceCalculator
-from ete3 import Tree,  NodeStyle
-from ete3.treeview import TreeStyle
 from sequence_analysis.constants import PHYLO_ALIGNMENTS, PHYLO_JOINED_FASTA, PHYLO_TREE_NEWIK, PHYLO_TREE_PICTURE
 from FindOrthoProt.generate_file_name import generate_id_file
 import os
@@ -30,7 +28,7 @@ class PhyloTree:
             for line in homologous_file:
                 joined_file.write(line)
             
-            joined_file.write('\n')  # Добавляем пустую строку между последовательностями
+            joined_file.write('\n')
 
             for record in SeqIO.parse(predicted_file, "fasta"):
                     record.id += '_predicted'
@@ -48,22 +46,20 @@ class PhyloTree:
             return 'Wrong name of aligner'
 
     def build_tree(self):
-        ids = list(self.parse_fasta())
-        json_str = json.dumps(ids)
         if self.algoritm_phylo == 'FastTree':
             newik = self.fast_tree_build()
-            return 'forTree', newik, json_str
+            return 'forTree', newik
         elif self.algoritm_phylo == 'RAxML':
             newik = self.raxml_build()
-            return 'forTree', newik, json_str
+            return 'forTree', newik
         elif self.algoritm_phylo == 'MaximumParsimony':
             newik = self.maximum_parsimony_build()
-            return 'forTree', newik, json_str
+            return 'forTree', newik
         else: 
             return 'Wrong name of phylology algorithm'
         
     def _muscle_align_run(self):
-        command = ["muscle", "-in", self.joined_fasta, "-out", self.output_align_file]
+        command = ["muscle3", "-in", self.joined_fasta, "-out", self.output_align_file]
         subprocess.run(command)
         print(f"Multiple alignment has been performed and saved to {self.output_align_file}")
         return self.output_align_file
@@ -99,12 +95,18 @@ class PhyloTree:
         file_path6 = self.output_newick_file + '.raxml.mlTrees'
         file_path7 = self.output_newick_file + '.raxml.reduced.phy'
 
-        os.remove(file_path1)
-        os.remove(file_path2)
-        os.remove(file_path3)
-        os.remove(file_path4)
-        os.remove(file_path5)
-        os.remove(file_path6)
+        if os.path.exists(file_path1):
+            os.remove(file_path1)
+        if os.path.exists(file_path2):
+            os.remove(file_path2)
+        if os.path.exists(file_path3):
+            os.remove(file_path3)
+        if os.path.exists(file_path4):
+            os.remove(file_path4)
+        if os.path.exists(file_path5):
+            os.remove(file_path5)
+        if os.path.exists(file_path6):
+            os.remove(file_path6)
         if os.path.exists(file_path7):
             os.remove(file_path7)
         
@@ -121,7 +123,6 @@ class PhyloTree:
         
         constructor = DistanceTreeConstructor()
         starting_tree = constructor.nj(dist_matrix)
-        # Phylo.draw_ascii(NJTree)
         
         scorer = Phylo.TreeConstruction.ParsimonyScorer()
         searcher = Phylo.TreeConstruction.NNITreeSearcher(scorer)
@@ -132,48 +133,12 @@ class PhyloTree:
         print('File was safed as', self.output_newick_file)
 
         return self.output_newick_file
-        
-    def parse_fasta(self):
-        # Parse the FASTA file and return a set of sequence IDs
-        ids = set()
-        with open(self.predicted_fasta, "r") as fasta:
-            for record in SeqIO.parse(fasta, "fasta"):
-                ids.add(record.id)
-        return ids
-
-
-    def visual_with_ete(self):
-        # Загрузить дерево из файла newick
-        tree = Tree(self.output_newick_file, format=1)
-        print('Ok')
-
-        # Создать стиль для отображения дерева
-        ts = TreeStyle()
-        ts.show_leaf_name = True  # Показывать имена листьев
-        ts.show_branch_length = True  # Показывать длину ветвей
-
-        ids_to_mark = self.parse_fasta()
-
-        def mark_nodes(node):
-            if node.name in ids_to_mark:
-                nstyle = NodeStyle()
-                nstyle["fgcolor"] = "red"  # Цвет кружочка
-                nstyle["size"] = 10  # Размер кружочка
-                node.set_style(nstyle)
-
-        for node in tree.traverse():
-            mark_nodes(node)
-
-            tree123 = tree.render(self.output_image_tree, tree_style=ts, dpi=1000)
-            print('Tree pic was saved as', self.output_image_tree)
-
-        return self.output_image_tree
 
     def visual_tree(self):
         tree = Phylo.read(self.output_newick_file, 'newick')
         num_leaves = len(tree.get_terminals())
 
-        fig_width = 10 + 0.5 * num_leaves
+        fig_width = 20 + 0.5 * num_leaves
         fig_height = 8 + 0.3 * num_leaves
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
@@ -183,15 +148,19 @@ class PhyloTree:
 
         tree.ladderize()
 
+        # Устанавливаем размер шрифта для листьев
         font = {'weight': 'bold',
                 'size': 16}
         plt.rc('font', **font)
+        plt.tight_layout()
 
         Phylo.draw(tree, axes=ax)
-        for label in ax.get_xticklabels() + ax.get_yticklabels():
-            label.set_fontsize(18)
 
         plt.savefig(self.output_image_tree)
+        print('Tree pic was saved as', self.output_image_tree)
         plt.close()
 
         return "Tree visualisation", self.output_image_tree
+    
+
+

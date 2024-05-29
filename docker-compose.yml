@@ -6,8 +6,8 @@ services:
     container_name: django
     build:
       context: .
-    command: python3 manage.py runserver 0.0.0.0:8000 && celery -A FindOrthoProt worker -l info && celery -A FindOrthoProt beat -l info
+    command: python3 manage.py runserver 0.0.0.0:80 && celery -A FindOrthoProt worker -l info && celery -A FindOrthoProt beat -l info
     volumes:
       - .:/usr/src/app/
     ports:
-      - 8000:8000
+      - 80:80

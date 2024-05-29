@@ -64,7 +64,7 @@
                 console.log('receivedMessage1', receivedMessage, typeof receivedMessage)
                 let messageContainer = document.getElementById('message-container-1');
                 const messageElement = document.createElement('p');
-                const filePath = receivedMessage[0].split('homologous_sequence/')[1];
+                const filePath = receivedMessage.split('homologous_sequence/')[1];
                 console.log(filePath)
                     
                 const downloadLink = document.createElement('a');

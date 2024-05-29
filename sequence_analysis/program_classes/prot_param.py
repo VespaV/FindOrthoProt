@@ -70,6 +70,7 @@ class ProteinPropertiesAnalyzer:
             amino_acid_counts = df[amino_acid]
             cumulative_counts = amino_acid_counts.groupby(level=0).cumsum()
 
+            # Добавление следа с определенным цветом
             if i == 0:
                 fig.add_trace(
                     go.Bar(x=sequence_names, y=cumulative_counts, name=amino_acid, marker=dict(color=colors[i])))
@@ -177,7 +178,7 @@ class ProteinPropertiesAnalyzer:
         values_dict2 = [float(value) for value in homologues_dict_values.values()]
 
         # Построение столбчатой диаграммы
-        fig, ax = plt.subplots(figsize=((len(values_dict1) + len(values_dict2)) * 0.4, 6))
+        fig, ax = plt.subplots(figsize=((len(values_dict1) + len(values_dict2)) * 0.4, 4))
         # plt.tight_layout()
         # Столбцы для значений из predict_dict_values
         ax.bar(np.arange(len(values_dict1)), values_dict1, label='Predicted sequences')
@@ -292,6 +293,7 @@ class ProteinPropertiesAnalyzer:
         print('secondary_structure_gistogram start')
         df_combined = self.build_df_secondary_structure_fraction()[2]
 
+        # Создание графика с использованием Plotly Express
         fig = px.bar(df_combined, barmode='stack', labels={'index': 'Sequence', 'value': 'Fractions'},
                      title='Fractions of secondary structures',
                      category_orders={'index': list(df_combined.index)})
@@ -312,7 +314,7 @@ class ProteinPropertiesAnalyzer:
                 tickfont=dict(size=16, color='black')
             ),
             yaxis_title=dict(text='Cumulative Count', font=dict(size=20, color='black')),
-            title=dict(text='Accumulated Histogram for Amino Acid Counts', font=dict(size=25, color='black'), x=0.5, y=0.9),
+            title=dict(text='Distribution Of Secondary Structures', font=dict(size=25, color='black'), x=0.5, y=0.9),
         )
 
         picture_path = generate_id_file('amino_count', 'png', SECONDARY_STUCTURE_PICTURES)

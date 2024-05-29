@@ -39,9 +39,9 @@ RUN apt-get install -y libxml-parser-perl
 EXPOSE 8000
 ENV DEBUG=1
 ENV SECRET_KEY="0930d30j9jd09j09j109fj01j9f"
-ENV ALLOWED_HOSTS="localhost, 127.0.0.1:8000"
+ENV ALLOWED_HOSTS="localhost, 127.0.0.1:80"
 
 ENV PATH="/root/meme/bin:/root/meme/libexec/meme-5.5.5:$PATH"
 
 # Установка переменной PATH и запуск приложения
-CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:80"]

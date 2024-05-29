@@ -11,7 +11,7 @@ import itertools
 from homologous_sequence.constants import *
 from Bio.Seq import Seq
 from FindOrthoProt.generate_file_name import generate_id_file
-from scipy.stats import shapiro, ranksums, iqr
+from scipy.stats import shapiro, iqr
 
 class Homology:
     def __init__(self, sequences_type, search_seq_file, sequences_file, num_blast_results = 5, 
@@ -33,7 +33,7 @@ class Homology:
     def run_muscle(self):
         input_file = self.search_seq_file
         output_file = self.output_alignment_file
-        command = f"muscle -in '{input_file}' -out '{output_file}'"
+        command = f"muscle3 -in '{input_file}' -out '{output_file}'"
         subprocess.run(command, shell=True)
         
         print ('output_align', output_file)
@@ -66,8 +66,8 @@ class Homology:
         aligner.mode = 'global'
 
         if self.sequences_type == 'Protein':
-            aligner.open_gap_score = -3
-            aligner.extend_gap_score = -1
+            aligner.open_gap_score = -5
+            aligner.extend_gap_score = -2
             aligner.substitution_matrix = Align.substitution_matrices.load("BLOSUM62")
 
         if self.sequences_type == 'DNA':
@@ -213,7 +213,7 @@ class Homology:
                 subprocess.run(search_command, shell=True, check=True)
                 os.remove(profile_file_name)
             
-                df = pd.read_csv(result_file_name, sep='\s+', skiprows=3, header=None)
+                df = pd.read_csv(result_file_name, sep=r'\s+', skiprows=3, header=None)
                 df = df.iloc[:, [0, 4, 5]]
                 df = df.iloc[:-10]
                 df.columns = ['ID', 'E-value', 'Score']
@@ -263,11 +263,10 @@ class Homology:
             self.psiblast_run()
         elif self.algorithm_blast == 'blastp':
             self.blastp_run()
-            
 
-        try: 
+        try:
             df = pd.read_csv(self.result_blast, delimiter='\t', header=None, names=['ID', 'Sequence', 'Description', 'E-Value', 'Score'])
-            df['Description'] = df['Description'].str.rsplit('=', n=1).str[-1]
+            df['Description'] = df['Description'].str.rsplit(' OX=', n=1).str[0]
             json_data = df.to_json(orient='records')
             df.to_excel(self.output_blast_file, index=False, header=True)
 
@@ -282,16 +281,7 @@ class Homology:
         print('PsiBLAST finished')
           
 
-    
     def blastp_run(self):
         command = f'blastp -query "{self.new_fasta}" -db {DB_PROTEIN_FOR_BLAST}swissprot -outfmt "6 qseqid sseqid salltitles evalue bitscore" -out {self.result_blast} -max_target_seqs {self.num_blast_results}'
         subprocess.run(command, shell=True)
         print('BLASTp finished')
-     
-
-        
-
-      
-    
-    
-    

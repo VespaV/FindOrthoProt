@@ -20,7 +20,16 @@ RUN wget https://meme-suite.org/meme/meme-software/5.5.5/meme-5.5.5.tar.gz && \
 
 # Установка дополнительных системных пакетов
 RUN apt-get update && \
-    apt-get install -y muscle3 hmmer fasttree ncbi-blast+ clustalo mafft raxml
+    apt-get install -y muscle3 hmmer fasttree ncbi-blast+ clustalo mafft
+
+RUN apt install build-essential git cmake
+RUN git clone --recursive https://github.com/amkozlov/raxml-ng.git
+RUN cd raxml-ng \
+    mkdir build \
+    cd build \
+    cmake .. \
+    make \
+    sudo make install
 
 RUN cd /usr/src/ && mkdir BLAST && cd BLAST && wget -c "ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" && \
     gunzip uniprot_sprot.fasta.gz && \
@@ -39,7 +48,7 @@ RUN apt-get install -y libxml-parser-perl
 EXPOSE 8000
 ENV DEBUG=1
 ENV SECRET_KEY="0930d30j9jd09j09j109fj01j9f"
-ENV ALLOWED_HOSTS="localhost,127.0.0.1:80,95.163.223.58,findorthoprot.ru"
+ENV ALLOWED_HOSTS="localhost,127.0.0.1:80,95.163.223.58,https://findorthoprot.ru,http://findorthoprot.ru,findorthoprot.ru"
 
 ENV PATH="/root/meme/bin:/root/meme/libexec/meme-5.5.5:$PATH"
 

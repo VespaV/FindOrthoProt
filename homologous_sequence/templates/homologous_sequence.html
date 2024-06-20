@@ -1,8 +1,8 @@
 
 	{% extends 'base.html' %}
 	{% block content %}
-	<main class="container-sm">
-		<div class="mx-auto mt-5 mb-5 p-5 w-75 shadow rounded">
+	<main>
+		<div class="mx-auto main-container shadow rounded">
 			<div>
 				<h1 class="mx-auto col-12 pb-4 text-center">Поиск гомологичных последовательностей</h1>
 			</div>
@@ -11,7 +11,7 @@
 				<!-- <input type="hidden" name="sequences_type" id="id_sequences_type" value="none_type" class="form-control"> -->
 				{% for input in form %}
 				{% if input.name == 'selected_sequences_count' %}
-				<button type="button" class="btn btn-light mt-3" style="width: 335px; text-align: left;" data-bs-toggle="collapse" data-bs-target="#additionalContent" aria-expanded="false" aria-controls="additionalContent">
+				<button type="button" class="btn btn-light mt-3" style="text-align: left;" data-bs-toggle="collapse" data-bs-target="#additionalContent" aria-expanded="false" aria-controls="additionalContent">
 					+ Показать дополнительные параметры
 				</button>
 		
